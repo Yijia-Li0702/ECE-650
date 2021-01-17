@@ -1,0 +1,24 @@
+#include <unistd.h>
+
+typedef struct block_t{
+  size_t size;
+  int available;
+  block_t * next;
+  block_t * prev;
+} block;
+
+block * memHead = NULL;
+block * memTail = NULL;
+int ifInit = 0;
+
+void initialize();
+//First Fit malloc/free
+void * ff_malloc(size_t size);
+void ff_free(void * ptr);
+//Best Fit malloc/free
+void * bf_malloc(size_t size);
+void bf_free(void * ptr);
+void * getNewMem(size_t size);
+
+unsigned long get_largest_free_data_segment_size();//in bytes
+unsigned long get_total_free_size();//in bytes
