@@ -3,8 +3,8 @@
 typedef struct block_t{
   size_t size;
   int available;
-  block_t * next;
-  block_t * prev;
+  struct block_t * next;
+  struct block_t * prev;
 } block;
 
 block * memHead = NULL;
@@ -18,6 +18,7 @@ void ff_free(void * ptr);
 //Best Fit malloc/free
 void * bf_malloc(size_t size);
 void bf_free(void * ptr);
+block * merge(block * curr);
 block * merge_next(block * curr);
 block * merge_prev(block * curr);
 void * getNewMem(size_t size);

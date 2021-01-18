@@ -9,7 +9,7 @@ void initialize(){
 	ifInit = 1;
 	memHead = sbrk(0);
 	memTail = memHead;
-	block * freeList = memstart;
+	block * freeList = memHead;
 	freeList->size = 0;
 	freeList->available = 1;
 	freeList->next = NULL;
@@ -24,7 +24,6 @@ void initialize(){
 void * ff_malloc(size_t size){
 	if(ifInit == 0){
 		initialize();
-		ifInit = 1;
 	}
 	if(size == 0){
 		return NULL;
@@ -42,7 +41,7 @@ void * ff_malloc(size_t size){
 	//	从头遍历 find the first 
 	block * curr = memHead;
 	while(curr->next != NULL){
-		if(curr->size = size && curr->available){
+		if(curr->size == size && curr->available){
 			curr->available = 0;
 			return curr + sizeof(block);
 		} else if(curr->size >= size + sizeof(block) && curr->available){
@@ -63,8 +62,9 @@ void ff_free(void * ptr){
 	block * curr = (block *)ptr - sizeof(block);
 	//need assert ?????
 	curr->available = 1;
-	curr = merge_next(curr);
-	curr = merge_prev(curr);
+  curr = merge(curr);
+	//curr = merge_next(curr);
+	//curr = merge_prev(curr);
 }
 
 void * bf_malloc(size_t size){
@@ -85,11 +85,10 @@ void * bf_malloc(size_t size){
 		void * ptr = mcb + sizeof(block);
 		return ptr;
 	}
-
 	block * curr = memHead;
 	block * best = NULL;
 	while(curr->next != NULL){
-		if(curr->size = size && curr->available){
+		if(curr->size == size && curr->available){
 			curr->available = 0;
 			return curr + sizeof(block);
 		} else if(curr->size >= size + sizeof(block) && curr->available){
@@ -135,11 +134,37 @@ void bf_free(void * ptr){
 	ff_free(ptr);
 }
 
+block * merge(block * curr){
+  if(curr != memTail){
+  	block * next_mcb = curr->next;
+  	if(next_mcb->available == 1){
+		curr->size = curr->size + next_mcb->size + sizeof(block);
+		curr->next = next_mcb->next;
+		next_mcb->next->prev = curr;
+		if(next_mcb == memTail){
+			memTail = curr;
+		}
+	}
+  }
+  if(curr != memHead){
+		block * prev_mcb = curr->prev;
+		if(prev_mcb->available == 1){
+			prev_mcb->size = curr->size + prev_mcb->size + sizeof(block);
+			prev_mcb->next = curr->next;
+			curr->next->prev = prev_mcb;
+			if(curr == memTail){
+				memTail = prev_mcb;
+			}
+		}
+	}
+	return curr;
+}
+
 block * merge_next(block * curr){
 	while(curr != memTail){
 		block * next_mcb = curr->next;
 		//merge with the next block 
-		if(next_mcb->available = 1){
+		if(next_mcb->available == 1){
 			curr->size = curr->size + next_mcb->size + sizeof(block);
 			curr->next = next_mcb->next;
 			next_mcb->next->prev = curr;
@@ -156,7 +181,7 @@ block * merge_next(block * curr){
 block * merge_prev(block * curr){
 	while(curr != memHead){
 		block * prev_mcb = curr->prev;
-		if(prev_mcb->available = 1){
+		if(prev_mcb->available == 1){
 			prev_mcb->size = curr->size + prev_mcb->size + sizeof(block);
 			prev_mcb->next = curr->next;
 			curr->next->prev = prev_mcb;
