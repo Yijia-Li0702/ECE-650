@@ -23,6 +23,7 @@ block * merge_next(block * curr);
 block * merge_prev(block * curr);
 void * getNewMem(size_t size);
 block * split_blk(block * curr, size_t size);
+void print();
 
 unsigned long get_largest_free_data_segment_size();//in bytes
 unsigned long get_total_free_size();//in bytes

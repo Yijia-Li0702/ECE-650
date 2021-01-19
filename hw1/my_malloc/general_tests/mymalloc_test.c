@@ -67,6 +67,7 @@ int main(int argc, char *argv[])
   
   printf("free array[0]\n");
   FREE(array[0]);
+   print();
   printf("free array[2]\n");
   FREE(array[2]);
 
@@ -98,6 +99,8 @@ int main(int argc, char *argv[])
   FREE(array[1]);
   printf("free array[3]\n");
   FREE(array[3]);
+  
+  print();
 
   size = 23;
   expected_sum += size * size;
@@ -109,6 +112,8 @@ int main(int argc, char *argv[])
   for (i=0; i < size; i++) {
     sum += array[6][i];
   } //for i
+  
+   print();
 
   size = 4;
   expected_sum += size * size;
