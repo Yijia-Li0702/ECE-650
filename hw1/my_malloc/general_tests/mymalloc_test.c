@@ -70,6 +70,7 @@ int main(int argc, char *argv[])
    print();
   printf("free array[2]\n");
   FREE(array[2]);
+  print();
 
   size = 7;
   expected_sum += size * size;
@@ -82,10 +83,34 @@ int main(int argc, char *argv[])
     sum += array[4][i];
   } //for i
 
-  size = 256;
+//  size = 256;
+//  expected_sum += size * size;
+//  printf("array[5],size=1056\n");
+//  array[5] = (int *)MALLOC(size * sizeof(int));//1056
+//  for (i=0; i < size; i++) {
+//    array[5][i] = size;
+//  } //for i
+//  for (i=0; i < size; i++) {
+//    sum += array[5][i];
+//  } //for i
+  
+//  //自己的test1
+//  size = 23;
+//  expected_sum += size * size;
+//  printf("array[5],size=92+32=124\n");
+//  array[5] = (int *)MALLOC(size * sizeof(int));//92+32=124
+//  for (i=0; i < size; i++) {
+//    array[5][i] = size;
+//  } //for i
+//  for (i=0; i < size; i++) {
+//    sum += array[5][i];
+//  } //for i
+  
+  //自己的test1
+  size = 32;
   expected_sum += size * size;
-  printf("array[5],size=1056\n");
-  array[5] = (int *)MALLOC(size * sizeof(int));//1056
+  printf("array[5],size=128+32=160\n");
+  array[5] = (int *)MALLOC(size * sizeof(int));//128+32=160
   for (i=0; i < size; i++) {
     array[5][i] = size;
   } //for i
@@ -95,13 +120,14 @@ int main(int argc, char *argv[])
   
   printf("free array[5]\n");
   FREE(array[5]);
+  print();
   printf("free array[1]\n");
   FREE(array[1]);
   printf("free array[3]\n");
   FREE(array[3]);
   
   print();
-
+  
   size = 23;
   expected_sum += size * size;
   printf("array[6],size=92+32=124\n");
@@ -113,7 +139,7 @@ int main(int argc, char *argv[])
     sum += array[6][i];
   } //for i
   
-   print();
+  print();
 
   size = 4;
   expected_sum += size * size;
@@ -125,8 +151,11 @@ int main(int argc, char *argv[])
   for (i=0; i < size; i++) {
     sum += array[7][i];
   } //for i
+  print();
   printf("free array[4]\n");
   FREE(array[4]);
+
+  print();
 
   size = 10;
   expected_sum += size * size;
@@ -138,6 +167,7 @@ int main(int argc, char *argv[])
   for (i=0; i < size; i++) {
     sum += array[8][i];
   } //for i
+  print();
 
   size = 32;
   expected_sum += size * size;
@@ -149,8 +179,10 @@ int main(int argc, char *argv[])
   for (i=0; i < size; i++) {
     sum += array[9][i];
   } //for i
+  print();
   printf("free array[6]\n");
   FREE(array[6]);
+  print();
   printf("free array[7]\n");
   FREE(array[7]);
   printf("free array[8]\n");
