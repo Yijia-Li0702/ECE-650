@@ -13,7 +13,6 @@
 void * ff_malloc(size_t size){
   if(memHead == NULL){
     block * mcb = getNewMem(size+sizeof(block));
-    //printf("getNew mcb = %p, size = %ld\n",mcb, size);
     if(mcb == NULL){
       return NULL;
     }
@@ -32,10 +31,11 @@ void * ff_malloc(size_t size){
       } else{
         memHead = curr->next;
       }
-      if(memTail!= curr){
+      //if(memTail!= curr){
+      if(curr->next != NULL){
 	      curr->next->prev=curr->prev;
       } else{
-	      memTail = curr->prev;
+	      //memTail = curr->prev;
       }
       //printf("ff_m curr = %p, size = %ld\n",curr, size);
       return (char*)curr + sizeof(block);
@@ -76,9 +76,10 @@ void * bf_malloc(size_t size){
       } else{
         curr->prev->next = curr->next;
       }
-      if(memTail== curr||curr->next ==NULL){
+      /*if(memTail== curr||curr->next ==NULL){
 	      memTail = curr->prev;
-      } else{
+      } else*/
+      if(curr->next != NULL){
         curr->next->prev=curr->prev;
       }
       best = curr;
@@ -86,10 +87,6 @@ void * bf_malloc(size_t size){
     } else if(curr->size >= size + sizeof(block) && curr->available){
        
       if(best == NULL||curr->size < best->size){
-        //if(best != NULL){
-	        //printf("curr = %p curr size = %ld,",curr, curr->size);
-	        //printf("best = %p best size = %ld\n",best, best->size);
-        //}
 	      best = curr;
       }
     }   
@@ -109,17 +106,15 @@ void * bf_malloc(size_t size){
 }
 
 void ff_free(void * ptr){
-  //printf("free ptr = %p\n", ptr);
   block *curr = (block*)((char*)ptr - sizeof(block));
   //printf("free curr merge before = %p, size = %ld\n", curr, curr->size);
   curr->available = 1;
   block * trace= memHead;
   if(memHead == NULL){
     memHead = curr;
-    memTail = curr;
+    //memTail = curr;
     curr->next = NULL;
     curr->prev=NULL;
-    //printf("free curr = %p, size = %ld(memHead == NULL)\n", curr, curr->size);
     return;
   }
   if((char*)curr<(char*)memHead){
@@ -127,18 +122,15 @@ void ff_free(void * ptr){
     memHead->prev = curr;
     memHead = curr;
     curr=merge(curr);
-    //printf("free curr = %p, size = %ld((char*)curr<(char*)memHead)\n", curr, curr->size);
     return;
   }
-  if((char*)curr>(char*)memTail){
-    curr->prev = memTail;
-    memTail->next = curr;
-    memTail = curr;
-    curr = merge(curr);
-    //memTail = curr;
-    // printf("free curr = %p, size = %ld\n", curr, curr->size); 
-    return;
-  }
+//  if((char*)curr>(char*)memTail){
+//    curr->prev = memTail;
+//    memTail->next = curr;
+//    memTail = curr;
+//    curr = merge(curr);
+//    return;
+//  }
   while(trace->next!=NULL){
     if((char*)curr > (char*)trace && (char*)curr < (char*)trace->next){
       curr->prev = trace;
@@ -146,11 +138,14 @@ void ff_free(void * ptr){
       trace->next->prev=curr;
       trace->next = curr;
       curr = merge(curr);
-      // printf("free curr = %p, size = %ld\n", curr, curr->size);
       return;
     }
     trace=trace->next;
   }
+  trace->next = curr;
+  curr->prev = trace;
+  curr->next = NULL;
+  curr = merge(curr);
   //printf("free curr = %p, size = %ld\n", curr, curr->size);
 }
 
@@ -166,13 +161,12 @@ block * split_blk(block * curr, size_t size){
   } else{
     curr->prev->next = new_mcb;
   }
-  if(curr == memTail||curr->next == NULL){
-    memTail = new_mcb;
-  } else{
-    //printf("split_blk curr = %p, size = %ld\n", curr, curr->size);
-    //printf("split_blk memTail = %p, size = %ld\n", memTail, memTail->size);
+//  if(curr == memTail||curr->next == NULL){
+//    memTail = new_mcb;
+//  } else{
+  if(curr->next != NULL){
     curr->next->prev = new_mcb;
-  };
+  }
   new_mcb->size = curr->size-size-sizeof(block);
   curr->size = size;
   // printf("split curr = %p, size = %ld;\n",curr, curr->size);
@@ -183,14 +177,14 @@ block * split_blk(block * curr, size_t size){
 block * merge(block * curr){
   if(curr != memTail){
     block * next_mcb = curr->next;
-    // printf("(block*)(char*)curr+sizeof(block) = %p\n",(block*)((char*)curr+sizeof(block)));
     if((char*)next_mcb == (char*)curr+sizeof(block)+curr->size){
       //printf("merge next_mcb = %p, size = %ld\n", next_mcb, next_mcb->size);
       curr->size = curr->size + next_mcb->size + sizeof(block);
       curr->next = next_mcb->next;
-      if(next_mcb == memTail){
-      	memTail = curr;
-      }else{
+//      if(next_mcb == memTail){
+//      	memTail = curr;
+//      }else{
+      if(next_mcb->next != NULL){
 	      next_mcb->next->prev = curr;
       }
     }
@@ -198,17 +192,17 @@ block * merge(block * curr){
 
   if(curr != memHead){
     block * prev_mcb = curr->prev;
-    // printf("prev_mcb add = %p\n",(char*)prev_mcb);
-    //  printf("(char*)curr-sizeof(block) = %p\n",(char*)curr-sizeof(block)-prev_mcb->size);
     if((char*)prev_mcb == (char*)curr-sizeof(block)-prev_mcb->size){
       // printf("merge prev_mcb = %p, size = %ld\n", prev_mcb, prev_mcb->size);
       prev_mcb->size = curr->size + prev_mcb->size + sizeof(block);
       prev_mcb->next = curr->next;
-      if(curr != memTail){
+      //if(curr != memTail){
+      if(curr->next != NULL){
         curr->next->prev = prev_mcb;
-      } else{
-        memTail = prev_mcb;
       }
+//      } else{
+//        memTail = prev_mcb;
+//      }
       prev_mcb->available = 1;
       return prev_mcb;
     }

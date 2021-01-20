@@ -69,7 +69,7 @@ int main(int argc, char *argv[])
 
 
   for (i=0; i < NUM_ITEMS; i++) {
-    printf("malloc i = %d", i);
+    //printf("malloc i = %d", i);
     malloc_items[0][i].address = (int *)MALLOC(malloc_items[0][i].bytes);
   } //for i
 
@@ -81,7 +81,7 @@ int main(int argc, char *argv[])
     unsigned malloc_set = i % 2;
     for (j=0; j < NUM_ITEMS; j+=50) {
       for (k=0; k < 50; k++) {
-        printf("iterate = %d,K = %d",i,k);
+        //printf("iterate = %d,K = %d",i,k);
 	      unsigned item_to_free = free_list[j+k];
 	      FREE(malloc_items[malloc_set][item_to_free].address);
       } //for k
@@ -103,7 +103,7 @@ int main(int argc, char *argv[])
   printf("Fragmentation  = %f\n", 1.0 - largest_free_block /(float)data_segment_free_space);
 
   for (i=0; i < NUM_ITEMS; i++) {
-    printf("free i = %d", i);
+    //printf("free i = %d", i);
     FREE(malloc_items[0][i].address);
   } //for i
 

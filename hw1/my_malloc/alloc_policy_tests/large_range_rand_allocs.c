@@ -69,7 +69,7 @@ int main(int argc, char *argv[])
 
 
   for (i=0; i < NUM_ITEMS; i++) {
-   printf("malloc i = %d", i);
+     //printf("malloc i = %d", i);
     malloc_items[0][i].address = (int *)MALLOC(malloc_items[0][i].bytes);
   } //for i
 
