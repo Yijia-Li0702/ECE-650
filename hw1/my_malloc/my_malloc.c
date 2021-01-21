@@ -2,14 +2,10 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <limits.h>
+#include "assert.h"
 
 #include "my_malloc.h"
 
-//if there are memory allocated before
-//check if there exists appropriate space
-//case 1:mcb->size == size 大小正好
-//case 2:mcb->size > size + sizeof(block) put data into it and construct a new mcb
-//case 3:mcb->size <size or size < * < size + sizeof(block) next
 void * ff_malloc(size_t size){
   if(memHead == NULL){
     block * mcb = getNewMem(size+sizeof(block));
@@ -21,32 +17,35 @@ void * ff_malloc(size_t size){
   if(size == 0){
     return NULL;
   } 
+  
   block * curr = memHead;
+  assert(curr->prev, NULL);
   while(curr != NULL){
     //printf("curr addrass %p, size %ld\n", curr, curr->size);
     if(curr->size == size && curr->available){
       curr->available = 0;
-      if(memHead != curr){
-	      curr->prev->next = curr->next;
-      } else{
+      if(memHead == curr||curr->prev == NULL){
         memHead = curr->next;
+      } else{
+        curr->prev->next = curr->next;
       }
       //if(memTail!= curr){
       if(curr->next != NULL){
 	      curr->next->prev=curr->prev;
-      } else{
-	      //memTail = curr->prev;
       }
+      //printf("memHead = %p\n", memHead);
       //printf("ff_m curr = %p, size = %ld\n",curr, size);
       return (char*)curr + sizeof(block);
     } else if(curr->size >= size + sizeof(block) && curr->available){
         curr = split_blk(curr,size);
+        //printf("memHead = %p\n", memHead);
       return (char*)curr + sizeof(block);
     } else {
         curr = curr->next;
     }
   }
   block * mcb = getNewMem(size+sizeof(block));
+  //printf("memHead = %p\n", memHead);
   // printf("getNewMem after address %p, size %ld\n", mcb, size);
   return (char*)mcb + sizeof(block);
 }
@@ -64,9 +63,10 @@ void * bf_malloc(size_t size){
   if(size == 0){
     return NULL;
   }
+  
   block * curr = memHead;
   block * best = NULL;
-  //printf("size=%ld;\n", size);
+  assert(curr->prev, NULL);
   while(curr != NULL){
     if(curr->size == size && curr->available){
         //printf("curr equal = %p, curr size = %ld \n",curr, curr->size);
@@ -83,6 +83,7 @@ void * bf_malloc(size_t size){
         curr->next->prev=curr->prev;
       }
       best = curr;
+      //printf("memHead = %p\n", memHead);
       return (char *)curr + sizeof(block);
     } else if(curr->size >= size + sizeof(block) && curr->available){
        
@@ -97,10 +98,15 @@ void * bf_malloc(size_t size){
     // printf("best == NULL");
     block * mcb = getNewMem(size+sizeof(block));
     //printf("best==NULL mcb = %p, size = %ld ",mcb, size);
+    //printf("memHead = %p\n", memHead);
     return (char*)mcb + sizeof(block);
   } else{
     //printf("split best = %p, size = %ld\n", best, best->size);
     best = split_blk(best,size);
+    if(best < memHead){
+      
+    }
+    //printf("memHead = %p\n", memHead);
     return (char*)best + sizeof(block);
   }
 }
@@ -115,6 +121,8 @@ void ff_free(void * ptr){
     //memTail = curr;
     curr->next = NULL;
     curr->prev=NULL;
+    
+    //printf("memHead = %p\n", memHead);
     return;
   }
   if((char*)curr<(char*)memHead){
@@ -122,15 +130,9 @@ void ff_free(void * ptr){
     memHead->prev = curr;
     memHead = curr;
     curr=merge(curr);
+    //printf("memHead = %p\n", memHead);
     return;
   }
-//  if((char*)curr>(char*)memTail){
-//    curr->prev = memTail;
-//    memTail->next = curr;
-//    memTail = curr;
-//    curr = merge(curr);
-//    return;
-//  }
   while(trace->next!=NULL){
     if((char*)curr > (char*)trace && (char*)curr < (char*)trace->next){
       curr->prev = trace;
@@ -138,6 +140,7 @@ void ff_free(void * ptr){
       trace->next->prev=curr;
       trace->next = curr;
       curr = merge(curr);
+      //printf("memHead = %p\n", memHead);
       return;
     }
     trace=trace->next;
@@ -146,6 +149,7 @@ void ff_free(void * ptr){
   curr->prev = trace;
   curr->next = NULL;
   curr = merge(curr);
+  //printf("memHead = %p\n", memHead);
   //printf("free curr = %p, size = %ld\n", curr, curr->size);
 }
 
@@ -161,9 +165,6 @@ block * split_blk(block * curr, size_t size){
   } else{
     curr->prev->next = new_mcb;
   }
-//  if(curr == memTail||curr->next == NULL){
-//    memTail = new_mcb;
-//  } else{
   if(curr->next != NULL){
     curr->next->prev = new_mcb;
   }
@@ -254,6 +255,9 @@ unsigned long get_total_free_size(){
 
 void print(){  
   block* curr=memHead;
+  if(curr->prev!= NULL){
+    printf("error!");
+  }
   while(curr != NULL){
     printf("freelist address = %p, size = %ld\n", curr, curr->size);
     curr = curr->next;
