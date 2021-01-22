@@ -6,7 +6,9 @@
 
 #include "my_malloc.h"
 
+//malloc() function using first fit strategy
 void * ff_malloc(size_t size){
+  //freelist is empty
   if(memHead == NULL){
     block * mcb = getNewMem(size+sizeof(block));
     if(mcb == NULL){
@@ -17,122 +19,95 @@ void * ff_malloc(size_t size){
   if(size == 0){
     return NULL;
   } 
-  
+  //check each free block, find eligible one
   block * curr = memHead;
-  assert(curr->prev, NULL);
   while(curr != NULL){
-    //printf("curr addrass %p, size %ld\n", curr, curr->size);
-    if(curr->size == size && curr->available){
-      curr->available = 0;
+    //block has exactly the same size
+    if(curr->size == size){
+      curr = remove_from_freelist(curr);
+      return (char*)curr + sizeof(block);
+    } else if(curr->size >= size + sizeof(block)){
+        //if the size is enough, split the block
+        curr = split_blk(curr,size);
+        return (char*)curr + sizeof(block);
+    } else {
+        curr = curr->next;
+    }
+  }
+  //if there's no block eligible, get a new one
+  block * mcb = getNewMem(size+sizeof(block));
+  return (char*)mcb + sizeof(block);
+}
+
+block * remove_from_freelist(block* curr){
       if(memHead == curr||curr->prev == NULL){
         memHead = curr->next;
       } else{
         curr->prev->next = curr->next;
       }
-      //if(memTail!= curr){
       if(curr->next != NULL){
 	      curr->next->prev=curr->prev;
       }
-      //printf("memHead = %p\n", memHead);
-      //printf("ff_m curr = %p, size = %ld\n",curr, size);
-      return (char*)curr + sizeof(block);
-    } else if(curr->size >= size + sizeof(block) && curr->available){
-        curr = split_blk(curr,size);
-        //printf("memHead = %p\n", memHead);
-      return (char*)curr + sizeof(block);
-    } else {
-        curr = curr->next;
-    }
-  }
-  block * mcb = getNewMem(size+sizeof(block));
-  //printf("memHead = %p\n", memHead);
-  // printf("getNewMem after address %p, size %ld\n", mcb, size);
-  return (char*)mcb + sizeof(block);
+      return curr;
 }
 
+//this is malloc function using best fit strategy
 void * bf_malloc(size_t size){
   if(memHead == NULL){
     block * mcb = getNewMem(size+sizeof(block));
-    // printf("getNew mcb = %p, size = %ld\n",mcb, size);
     if(mcb == NULL){
       return NULL;
     }
-    //printf("return %p\n",mcb + sizeof(block));
     return (char*)mcb + sizeof(block);
   }
   if(size == 0){
     return NULL;
   }
-  
   block * curr = memHead;
   block * best = NULL;
-  assert(curr->prev, NULL);
   while(curr != NULL){
-    if(curr->size == size && curr->available){
-        //printf("curr equal = %p, curr size = %ld \n",curr, curr->size);
-        curr->available = 0;
-      if(memHead == curr ||curr->prev == NULL){
-      	memHead = curr->next;
-      } else{
-        curr->prev->next = curr->next;
-      }
-      /*if(memTail== curr||curr->next ==NULL){
-	      memTail = curr->prev;
-      } else*/
-      if(curr->next != NULL){
-        curr->next->prev=curr->prev;
-      }
+    //if having equal size, can return directly
+    if(curr->size == size){
+      curr = remove_from_freelist(curr);
       best = curr;
-      //printf("memHead = %p\n", memHead);
       return (char *)curr + sizeof(block);
-    } else if(curr->size >= size + sizeof(block) && curr->available){
-       
+    } else if(curr->size >= size + sizeof(block)){
+      //record the available one with the minimum size
       if(best == NULL||curr->size < best->size){
 	      best = curr;
       }
     }   
     curr = curr->next;
   }
-  //if there's no block usable
   if(best == NULL){
-    // printf("best == NULL");
     block * mcb = getNewMem(size+sizeof(block));
-    //printf("best==NULL mcb = %p, size = %ld ",mcb, size);
-    //printf("memHead = %p\n", memHead);
     return (char*)mcb + sizeof(block);
   } else{
-    //printf("split best = %p, size = %ld\n", best, best->size);
     best = split_blk(best,size);
-    if(best < memHead){
-      
-    }
-    //printf("memHead = %p\n", memHead);
     return (char*)best + sizeof(block);
   }
 }
-
+//free function to free allocated memory and put it into  freelist
 void ff_free(void * ptr){
+  //calculate corrrect address
   block *curr = (block*)((char*)ptr - sizeof(block));
-  //printf("free curr merge before = %p, size = %ld\n", curr, curr->size);
-  curr->available = 1;
   block * trace= memHead;
+  //if the freelist is empty
   if(memHead == NULL){
     memHead = curr;
-    //memTail = curr;
     curr->next = NULL;
     curr->prev=NULL;
-    
-    //printf("memHead = %p\n", memHead);
     return;
   }
+  //if it's in front of head, it will become head
   if((char*)curr<(char*)memHead){
     curr->next= memHead;
     memHead->prev = curr;
     memHead = curr;
     curr=merge(curr);
-    //printf("memHead = %p\n", memHead);
     return;
   }
+  //check each block in the freelist
   while(trace->next!=NULL){
     if((char*)curr > (char*)trace && (char*)curr < (char*)trace->next){
       curr->prev = trace;
@@ -140,26 +115,24 @@ void ff_free(void * ptr){
       trace->next->prev=curr;
       trace->next = curr;
       curr = merge(curr);
-      //printf("memHead = %p\n", memHead);
       return;
     }
     trace=trace->next;
   }
+  //if it's lower than the tail of freelist
   trace->next = curr;
   curr->prev = trace;
   curr->next = NULL;
   curr = merge(curr);
-  //printf("memHead = %p\n", memHead);
-  //printf("free curr = %p, size = %ld\n", curr, curr->size);
 }
 
+//this function is to split one block into filled one and usable one
 block * split_blk(block * curr, size_t size){
-  curr->available = 0;
   //how to construct a new block
   block * new_mcb = (block *)((char*)curr+sizeof(block)+size);
-  new_mcb->available = 1;
   new_mcb->next = curr->next;
   new_mcb->prev = curr->prev;
+  //put the new block into freelist
   if(curr == memHead||curr->prev == NULL){
     memHead = new_mcb;
   } else{
@@ -170,44 +143,31 @@ block * split_blk(block * curr, size_t size){
   }
   new_mcb->size = curr->size-size-sizeof(block);
   curr->size = size;
-  // printf("split curr = %p, size = %ld;\n",curr, curr->size);
-  // printf("split new_mcb = %p, size = %ld;\n",new_mcb, new_mcb->size);
   return curr;
 }
-
+//this function is to merge two free blocks and put the new one into freelist
 block * merge(block * curr){
-  if(curr != memTail){
+  //if the block isn't at the tail of freelist
+  if(curr->next!=NULL){
     block * next_mcb = curr->next;
     if((char*)next_mcb == (char*)curr+sizeof(block)+curr->size){
-      //printf("merge next_mcb = %p, size = %ld\n", next_mcb, next_mcb->size);
       curr->size = curr->size + next_mcb->size + sizeof(block);
       curr->next = next_mcb->next;
-//      if(next_mcb == memTail){
-//      	memTail = curr;
-//      }else{
       if(next_mcb->next != NULL){
 	      next_mcb->next->prev = curr;
       }
     }
   }
-
   if(curr != memHead){
     block * prev_mcb = curr->prev;
     if((char*)prev_mcb == (char*)curr-sizeof(block)-prev_mcb->size){
-      // printf("merge prev_mcb = %p, size = %ld\n", prev_mcb, prev_mcb->size);
       prev_mcb->size = curr->size + prev_mcb->size + sizeof(block);
       prev_mcb->next = curr->next;
-      //if(curr != memTail){
       if(curr->next != NULL){
         curr->next->prev = prev_mcb;
       }
-//      } else{
-//        memTail = prev_mcb;
-//      }
-      prev_mcb->available = 1;
       return prev_mcb;
     }
-  
   }
   return curr;
 }
@@ -215,13 +175,11 @@ block * merge(block * curr){
 void * getNewMem(size_t size){
   //find the current location of the program break
   block * new_blk = sbrk(size);
-  //printf("getNewMem address %p, size %ld\n", new_blk, size);
   if(new_blk == (void*) - 1){
     return NULL;
   }
   new_blk->size = size-sizeof(block);
   new_blk->next = NULL;
-  new_blk->available = 0;
   new_blk->prev = NULL;
   return new_blk;
 }
@@ -233,7 +191,7 @@ unsigned long get_largest_free_data_segment_size(){
   block * curr = memHead;
   unsigned long max = 0;
   while(curr != NULL){
-    if(curr -> available && curr->size > max){
+    if(curr->size > max){
       max = curr->size;
     }
     curr = curr->next;
@@ -245,9 +203,7 @@ unsigned long get_total_free_size(){
   block * curr = memHead;
   unsigned long total = 0;
   while(curr != NULL){
-    if(curr -> available){
-      total = total + curr->size;
-    }
+    total = total + curr->size;    
     curr = curr->next;
   }
   return total;
@@ -264,49 +220,4 @@ void print(){
   }
 }
 
-
-//block * merge_next(block * curr){
-//	while(curr != memTail){
-//		block * next_mcb = curr->next;
-//		//merge with the next block 
-//		if(next_mcb->available == 1){
-//			curr->size = curr->size + next_mcb->size + sizeof(block);
-//			curr->next = next_mcb->next;
-//			next_mcb->next->prev = curr;
-//			if(next_mcb == memTail){
-//				memTail = curr;
-//			}
-//
-//		} else{break;}
-//		curr = curr->next;
-//	}
-//	return curr;
-//}
-//
-//block * merge_prev(block * curr){
-//	while(curr != memHead){
-//		block * prev_mcb = curr->prev;
-//		if(prev_mcb->available == 1){
-//			prev_mcb->size = curr->size + prev_mcb->size + sizeof(block);
-//			prev_mcb->next = curr->next;
-//			curr->next->prev = prev_mcb;
-//			if(curr == memTail){
-//				memTail = prev_mcb;
-//			}
-//		} else{break;}
-//		curr = prev_mcb;
-//	}
-//	return curr;
-//}
-//
-//void initialize(){
-//	ifInit = 1;
-//	memHead = sbrk(0);
-//	memTail = memHead;
-//	block * freeList = memHead;
-//	freeList->size = 0;
-//	freeList->available = 1;
-//	freeList->next = NULL;
-//	freeList->prev = NULL;
-//}
 
