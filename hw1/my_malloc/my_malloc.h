@@ -2,6 +2,7 @@
 
 typedef struct block_t{
   size_t size;
+  int available;
   struct block_t * next;
   struct block_t * prev;
 } block;
