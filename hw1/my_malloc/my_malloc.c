@@ -31,27 +31,27 @@ void * ff_malloc(size_t size){
       curr = split_blk(curr,size);
       return (char*)curr + sizeof(block);
     } else {
-        curr = curr->next;
+      curr = curr->next;
     }
   }
   //if there's no block eligible, get a new one
   block * mcb = getNewMem(size+sizeof(block));
   return (char*)mcb + sizeof(block);
 }
-//remove a used block out of freelist, update its previous and next block
+//this function is to remove a used block out of freelist, update its previous and next block
 block * remove_from_freelist(block* curr){
-      if(memHead == curr||curr->prev == NULL){
-        memHead = curr->next;
-      } else{
-        curr->prev->next = curr->next;
-      }
-      if(curr->next != NULL){
-	      curr->next->prev=curr->prev;
-      }
-      return curr;
+  if(memHead == curr||curr->prev == NULL){
+    memHead = curr->next;
+  } else{
+    curr->prev->next = curr->next;
+  }
+  if(curr->next != NULL){
+    curr->next->prev=curr->prev;
+  }
+  return curr;
 }
 
-//this is malloc function using best fit strategy
+//this is a malloc function using best fit strategy
 void * bf_malloc(size_t size){
   if(memHead == NULL){
     block * mcb = getNewMem(size+sizeof(block));
@@ -76,7 +76,7 @@ void * bf_malloc(size_t size){
     } else if(curr->size >= size + sizeof(block) && curr->available){
       //record the available one with the minimum size
       if(best == NULL||curr->size < best->size){
-	      best = curr;
+	best = curr;
       }
     }   
     curr = curr->next;
@@ -91,7 +91,7 @@ void * bf_malloc(size_t size){
   }
 }
 
-//free function to free allocated memory and put it into  freelist
+//this free function is to free allocated memory and put it into freelist
 void ff_free(void * ptr){
   //calculate corrrect address
   block *curr = (block*)((char*)ptr - sizeof(block));
@@ -104,7 +104,7 @@ void ff_free(void * ptr){
     curr->prev=NULL;
     return;
   }
-   //if it's in front of head, it will become head
+  //if it's in front of head, it will become head
   if((char*)curr<(char*)memHead){
     curr->next= memHead;
     memHead->prev = curr;
@@ -161,10 +161,11 @@ block * merge(block * curr){
       curr->size = curr->size + next_mcb->size + sizeof(block);
       curr->next = next_mcb->next;
       if(next_mcb->next != NULL){
-	      next_mcb->next->prev = curr;
+	next_mcb->next->prev = curr;
       }
     }
   }
+  //if this block isn't at the top of freelist
   if(curr != memHead){
     block * prev_mcb = curr->prev;
     if((char*)prev_mcb == (char*)curr-sizeof(block)-prev_mcb->size){
