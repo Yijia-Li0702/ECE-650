@@ -10,7 +10,7 @@ For this assignment, I implement my own version of memory allocation function, m
 
 ### 2. Design, implementation and test 
 
-The first key point is to construct an appropriate data structure to store meta information, so that we can get the corresponding information conveniently. My meta information block is defined as follows.
+The first key point is to construct an appropriate data structure to store meta information, so that we can get the corresponding information conveniently. My meta information block is defined as follows,
 
 
 ```c
@@ -22,15 +22,15 @@ typedef struct block_t{
 } block;
 ```
 
-This structure has four variables. First, "size" records how many bytes in the allocated memory. Second, "available" represents if the block can be used to store data. The two block_t* next and previous point to the previous and next block adjacent to current block respectively. 
+This structure has four variables. First, "size" records how many bytes in the allocated memory. Second, "available" represents if the block can be used to store data. The two block_t pointers next and previous point to the previous and next block adjacent to current block respectively. 
 
 The basic structure of my implementation is as the photo below,
 
 ![freeList](C:\Users\22850\Desktop\freeList.png)
 
-As the photo shows, I use a double linked list of block to manage all available blocks, which is called freeList, and use a pointer of block points to the head of the freeList. When calling memory allocation function malloc, first, I check if there is block available in the freeList. If not, the function will call `sbrk()` to get more money and create a new block to store its information. If the freeList isn't empty, the function will traverse freeList from its head. There are three cases may occur. 
+As the photo shows, I use a double linked list of block to manage all available blocks, which is called freeList, and use another pointer of block points to the head of the freeList, called memHead. When calling memory allocation function `malloc()`, first, I check if there is block available in the freeList. If not, the function will call `sbrk()` to get more memory and create a new block to store its information. If the freeList isn't empty, the function will traverse freeList from its head. There are three cases may occur. 
 
-1. There exists one block which has exactly the same size as we need. This block will be removed from freeList. Its previous and next block pointer will be updated. Its available signal is changed to 0. Then address of this block will be returned. 
+1. There exists one block which has exactly the same size as we need. This block will be removed from freeList. Its previous and next block pointer will be updated and its available signal will be changed to 0. Then address of this block will be returned. 
 2. If the size of a block is larger than required size + sizeof(block), we will call `split_blk()` to split this block into two blocks. The first one has the size required, while the second one will be put into freeList. The first block will be returned.
 3. The third case is that there's no eligible block, so the function will call `sbrk()` and get a new memory. And address of the new memory will be returned.
 
@@ -50,11 +50,15 @@ My performance results are as follow,
 | Large   |         41.43s         |          0.859026          |        52.742s        |         0.976159          |
 
 
-For `equal_size_allocs`, it uses the same umber of bytes (128) in all of its malloc calls. Therefore, for best fit and first fit,  they should have relatively similar performance. Their fragmentation are the same and the difference of execution time is very small. The execution time for best fit is a little larger than one for first fit is due to its best selection process.
+For `equal_size_allocs`, it uses the same number of bytes (128) in all of its malloc calls. Therefore, for best fit and first fit,  they should have relatively similar performance. Their fragmentation are the same and the difference of execution time is very small. The execution time for best fit is a little larger than one for first fit is due to its best selection process.
 
-For `small_range_rand_allocs`, it works with allocations of random size, ranging from 128 - 512 bytes. The program first malloc is a large number of these random regions. Then the program alternates freeing a random selection of 50 of these allocated regions, and mallocing 50 more regions with a random size from 128 - 512 bytes. Since best fit always chooses the smallest suitable block, there will be more small block left. It fragmentation should be larger than first fit. My execution outcome proves this point. In this test, best fit has a better execution time than first fit. In my mind, the reason may be bytes of allocated memory is relatively small. So it will be easier to find the same size block through best fit, while first fit need always split blocks, which takes much longer time than finding the smallest suitable block.
+For `small_range_rand_allocs`, it works with allocations of random size, ranging from 128 - 512 bytes. The program first malloc is a large number of these random regions. Then the program alternates freeing a random selection of 50 of these allocated regions, and mallocing 50 more regions with a random size from 128 - 512 bytes. Since best fit always chooses the smallest suitable block, there will be more small block left. It's fragmentation should be larger than first fit. My execution outcome proves this point. In this test, best fit has a better execution time than first fit. In my mind, the reason may be bytes of allocated memory is relatively small. So best fit will be easier to find the same size block. However first fit always need to split blocks, which takes much longer time than finding the smallest suitable block.
 
 For `large_range_rand_allocs`, it works with allocations of random size, ranging from
-32 - 64K bytes (in 32B increments). The program first malloc is a large number of these random regions. Then the program alternates freeing a random selection of 50 of these allocated regions, and mallocing 50 more regions with a random size from 32 - 64K bytes. As we can see, fragmentation of best fit is still larger than the one of first fit due to the same reason as small test. And the execution time of best fit turns to be larger than first fit, which is opposite to outcome of small test. It's hard for best fit to find a block with exactly the same size. So its time for searching an splitting will become longer. 
+32 - 64K bytes (in 32B increments). The program first malloc is a large number of these random regions. Then the program alternates freeing a random selection of 50 of these allocated regions, and mallocing 50 more regions with a random size from 32 - 64K bytes. As we can see, fragmentation of best fit is still larger than the one of first fit due to the same reason as small test above. However, the execution time of best fit turns to be larger than first fit, which is opposite to outcome of small test. The reason is that it's hard for best fit to find a block with exactly the same size because of the bytes of allocated memory being larger. So it's time for searching and splitting will become longer than first fit.
 
-There is also some points that can be optimized in this project. For example, single linked list may be a more simplified structure than doubly linked list. And the available signal can also be simplified.
+Through the three performance test results, it's hard to determine which policy is better. Both of them have advantages and disadvantages under different situations. What we can say is that when bytes of allocated memory is relatively large, first fit may be a more appropriate choice.
+
+### 4. Potential improvement 
+
+There is also some points that can be optimized in this project. For example, single linked list may be a more simplified structure than doubly linked list, which will develop performance. And the available signal can also be simplified.
