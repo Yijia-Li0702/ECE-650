@@ -4,7 +4,7 @@
 
 ### 1. Overview
 
-For this assignment, I implement my own version of memory allocation function, malloc and free. And I use two memory allocation policy first fit and best fit to implement. So there are four main function`ff_malloc()`, `bf_malloc()`, `ff_free()`, `bf_free()`. In this report, I will introduce the implement structure and details of the four function, and then analyze performance results.
+For this assignment, I implement my own version of memory allocation function, malloc() and free(). And I use two memory allocation policies first fit and best fit to implement. So there are four main functions `ff_malloc()`, `bf_malloc()`, `ff_free()`, `bf_free()`. In this report, I will introduce the implement structure and details of the four functions, and then analyze performance results.
 
 
 
@@ -24,11 +24,19 @@ typedef struct block_t{
 
 This structure has four variables. First, "size" records how many bytes in the allocated memory. Second, "available" represents if the block can be used to store data. The two block_t* next and previous point to the previous and next block adjacent to current block respectively. 
 
-I use a double linked list of block to manage all available blocks, which is called freeList, and use a pointer of block points to the head of the freeList. When calling memory allocation function malloc, first, I check if there is block available in the freeList. If not, the function will call `sbrk()` to get more money and create a new block to store its information. If the freeList isn't empty, the function will iterate freeList from its head. There are three possibilities may occur. First, there exists one block which has exactly the same size as we need. This block will be removed from freeList, update its previous and next block, and change its available to 0. Then address of this block will be returned. Second, if the size of a block is larger than required size + sizeof(block), we will split this block by calling `split_blk()` to split this block into two blocks, the first one has the size required, the second one will be put into freeList. The first block will be returned. The third case is that there's no eligible block, so the function will call `sbrk()` and get a new memory.
+The basic structure of my implementation is as the photo below,
 
-As for `free()` function, what we need to do is to free a block, put it back to freeList and then merge it. First, I iterate the freeList from head to find an appropriate position to insert freed block, and then check if it can merge with its previous and next blocks. If so, the two or three blocks will be merged into one block, and corresponding information will be updated simultaneously.
+![freeList](C:\Users\22850\Desktop\freeList.png)
 
-For best fit strategy, the most significant difference between FF and BF is that BF always choose the smallest suitable block. Therefore, in `bf_malloc()`, I add a new variable "best", which is a block * pointing to the current eligible smallest block. After traversing, if best isn't NULL, the best block will be splitted.
+As the photo shows, I use a double linked list of block to manage all available blocks, which is called freeList, and use a pointer of block points to the head of the freeList. When calling memory allocation function malloc, first, I check if there is block available in the freeList. If not, the function will call `sbrk()` to get more money and create a new block to store its information. If the freeList isn't empty, the function will traverse freeList from its head. There are three cases may occur. 
+
+1. There exists one block which has exactly the same size as we need. This block will be removed from freeList. Its previous and next block pointer will be updated. Its available signal is changed to 0. Then address of this block will be returned. 
+2. If the size of a block is larger than required size + sizeof(block), we will call `split_blk()` to split this block into two blocks. The first one has the size required, while the second one will be put into freeList. The first block will be returned.
+3. The third case is that there's no eligible block, so the function will call `sbrk()` and get a new memory. And address of the new memory will be returned.
+
+As for `free()` function, what we need to do is to free a block, put it back to freeList and then merge it. First, I traverse the freeList from head to find an appropriate position to insert freed block, and then check if it can merge with its previous and next blocks by calling `merge()`. If so, the two or three blocks will be merged into one block, and corresponding information will be updated simultaneously.
+
+For best fit strategy, the most significant difference between FF and BF is that BF always choose the smallest suitable block. Therefore, in `bf_malloc()`, I add a new variable "best", which is a block pointer pointing to the current eligible smallest block. After traversing, if best is NULL, we need to get a new memory by calling `getNewMem()`. If not, the best block will be splitted.
 
 
 ### 3. Performance Results & Analysis
