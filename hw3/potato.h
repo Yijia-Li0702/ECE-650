@@ -1,3 +1,5 @@
+// #ifndef POTATO_H
+// #define POTATO_H
 #include <stdio.h>
 #include <string.h>
 // #include <cstdio>
@@ -17,3 +19,4 @@ struct potato_t{
   int numTurn;
 };
 typedef struct potato_t Potato;
+// #endif
